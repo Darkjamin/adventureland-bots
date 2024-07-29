@@ -71,3 +71,6 @@ credentials*.json
 
 # G info
 G_*.json
+.vscode/launch.json
+package-lock.json
+package.json

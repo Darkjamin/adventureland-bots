@@ -25,11 +25,24 @@ import { ElixirStrategy } from "./strategy_pattern/strategies/elixir.js"
 import { NewMerchantStrategy, defaultNewMerchantStrategyOptions } from "./merchant/strategy.js"
 import { MagiportOthersSmartMovingToUsStrategy } from "./strategy_pattern/strategies/magiport.js"
 
-await Promise.all([AL.Game.loginJSONFile("../credentials.json", false), AL.Game.getGData(true)])
-await AL.Pathfinder.prepare(AL.Game.G)
+AL.Game.setServer("http://thmsn.adventureland.community")
+
+await Promise.all([AL.Game.loginJSONFile("../credentials.thmsn.json", false), AL.Game.getGData(false)])
+await AL.Pathfinder.prepare(AL.Game.G, { remove_abtesting: true, remove_test: true })
+await AL.Game.updateServersAndCharacters()
+
+//// Game Hacks
+// Hack to fix URLs
+for (const region in AL.Game.servers) {
+    for (const id in AL.Game.servers[region]) {
+        console.debug(`before: ${AL.Game.servers[region][id].addr}`)
+        AL.Game.servers[region][id].addr = "thmsn.adventureland.community"
+        console.debug(`after: ${AL.Game.servers[region][id].addr}`)
+    }
+}
 
 // Tweakable
-const SERVER_REGION: ServerRegion = "US"
+const SERVER_REGION: ServerRegion = "EU"
 const SERVER_ID: ServerIdentifier = "I"
 const FARMABLE_MONSTERS: MonsterName[] = ["bee", "crab", "goo", "poisio"]
 
