@@ -44,7 +44,8 @@ for (const region in AL.Game.servers) {
 // Tweakable
 const SERVER_REGION: ServerRegion = "EU"
 const SERVER_ID: ServerIdentifier = "I"
-const FARMABLE_MONSTERS: MonsterName[] = ["bee", "crab", "goo", "poisio"]
+//const FARMABLE_MONSTERS: MonsterName[] = ["bee", "crab", "goo", "poisio"]
+const FARMABLE_MONSTERS: MonsterName[] = ["goo", "bee", "crab", "minimush", "osnake", "snake", "rat", "squig", "arcticbee", "armadillo", "stoneworm", "cgoo", "croc", "iceroamer", "poisio", "porcupine", "crabx", "bbpompom", "tortoise", "booboo", "bat", "boar"]
 
 // Important variables
 let CURRENT_MONSTER: MonsterName = FARMABLE_MONSTERS[0]
