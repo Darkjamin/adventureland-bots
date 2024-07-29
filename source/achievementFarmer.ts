@@ -24,6 +24,7 @@ import { sleep } from "./base/general.js"
 import { ElixirStrategy } from "./strategy_pattern/strategies/elixir.js"
 import { NewMerchantStrategy, defaultNewMerchantStrategyOptions } from "./merchant/strategy.js"
 import { MagiportOthersSmartMovingToUsStrategy } from "./strategy_pattern/strategies/magiport.js"
+import { PartyHealStrategy } from "./strategy_pattern/strategies/partyheal.js"
 
 AL.Game.setServer("http://thmsn.adventureland.community")
 
@@ -67,6 +68,7 @@ const MERCHANT_STRATEGY = new NewMerchantStrategy({
     contexts: CONTEXTS,
 })
 const PARTY_ACCEPT_STRATEGY = new AcceptPartyRequestStrategy()
+const PARTY_HEAL_STRATEGY = new PartyHealStrategy(CONTEXTS)
 const RESPAWN_STRATEGY = new RespawnStrategy()
 const SELL_STRATEGY = new SellStrategy({ itemConfig: DEFAULT_ITEM_CONFIG })
 const TRACKER_STRATEGY = new TrackerStrategy()
@@ -215,6 +217,8 @@ async function start() {
 
             if (character.ctype === "mage") {
                 context.applyStrategies([MAGIPORT_STRATEGY])
+            } else if (character.ctype === "priest") {
+                context.applyStrategies([PARTY_HEAL_STRATEGY])
             } else if (character.ctype === "warrior") {
                 context.applyStrategies([CHARGE_STRATEGY])
             }
