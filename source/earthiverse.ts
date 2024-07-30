@@ -111,13 +111,21 @@ const SPECIAL_MONSTERS: MonsterName[] = [
 const MAX_PUBLIC_CHARACTERS = 6
 
 const MERCHANT = "JoiNta"
-const WARRIOR = "JoiNtor"
-const MAGE = "JoiNty"
-const PRIEST = "JoiNtie"
-const RANGER = "JoiNto"
+const WARRIORS = ["JoiNtor"]
+const MAGES = ["JoiNty"]
+const PRIESTS = ["JoiNtie"]
+const RANGERS = [] // ["JoiNto"]
+const PALADINS = [] // ["earthPal"]
+const ROGUES = [] // ["earthRog"]
 
-const PARTY_LEADER = WARRIOR
-const PARTY_ALLOWLIST = [RANGER, MAGE, PRIEST, WARRIOR]
+const PARTY_LEADER: string = WARRIORS[0]
+const PARTY_ALLOWLIST: string[] = [...RANGERS, ...MAGES, ...PRIESTS, ...WARRIORS, ...PALADINS, ...ROGUES]
+
+if (PARTY_ALLOWLIST.length < 3) {
+    console.warn(`We're only using ${PARTY_ALLOWLIST.length} attacking characters!`)
+} else if (PARTY_ALLOWLIST.length > 3) {
+    throw new Error(`Don't use more than 3 attacking characters! (Currently set up with ${PARTY_ALLOWLIST.join("/")})`)
+}
 
 let TARGET_REGION: ServerRegion = DEFAULT_REGION
 let TARGET_IDENTIFIER: ServerIdentifier = DEFAULT_IDENTIFIER
@@ -830,10 +838,10 @@ const startMerchantContext = async () => {
 }
 startMerchantContext()
 
-const startWarriorContext = async () => {
+const startWarriorContext = async (name: string) => {
     let warrior: Warrior
     try {
-        warrior = await AL.Game.startWarrior(WARRIOR, TARGET_REGION, TARGET_IDENTIFIER)
+        warrior = await AL.Game.startWarrior(name, TARGET_REGION, TARGET_IDENTIFIER)
     } catch (e) {
         if (warrior) warrior.disconnect()
         console.error(e)
@@ -845,12 +853,12 @@ const startWarriorContext = async () => {
     PRIVATE_CONTEXTS.push(CONTEXT)
     ALL_CONTEXTS.push(CONTEXT)
 }
-startWarriorContext()
+for (const name of WARRIORS) startWarriorContext(name)
 
-const startMageContext = async () => {
+const startMageContext = async (name: string) => {
     let mage: Mage
     try {
-        mage = await AL.Game.startMage(MAGE, TARGET_REGION, TARGET_IDENTIFIER)
+        mage = await AL.Game.startMage(name, TARGET_REGION, TARGET_IDENTIFIER)
     } catch (e) {
         if (mage) mage.disconnect()
         console.error(e)
@@ -862,12 +870,29 @@ const startMageContext = async () => {
     PRIVATE_CONTEXTS.push(CONTEXT)
     ALL_CONTEXTS.push(CONTEXT)
 }
-startMageContext()
+for (const name of MAGES) startMageContext(name)
 
-const startPriestContext = async () => {
+const startPaladinContext = async (name: string) => {
+    let paladin: Paladin
+    try {
+        paladin = await AL.Game.startPaladin(name, TARGET_REGION, TARGET_IDENTIFIER)
+    } catch (e) {
+        if (paladin) paladin.disconnect()
+        console.error(e)
+        setTimeout(startPaladinContext, 10_000)
+        return
+    }
+    const CONTEXT = new Strategist<Paladin>(paladin, baseStrategy)
+    startPaladin(CONTEXT, true).catch(console.error)
+    PRIVATE_CONTEXTS.push(CONTEXT)
+    ALL_CONTEXTS.push(CONTEXT)
+}
+for (const name of PALADINS) startPaladinContext(name)
+
+const startPriestContext = async (name: string) => {
     let priest: Priest
     try {
-        priest = await AL.Game.startPriest(PRIEST, TARGET_REGION, TARGET_IDENTIFIER)
+        priest = await AL.Game.startPriest(name, TARGET_REGION, TARGET_IDENTIFIER)
     } catch (e) {
         if (priest) priest.disconnect()
         console.error(e)
@@ -879,24 +904,41 @@ const startPriestContext = async () => {
     PRIVATE_CONTEXTS.push(CONTEXT)
     ALL_CONTEXTS.push(CONTEXT)
 }
-startPriestContext()
+for (const name of PRIESTS) startPriestContext(name)
 
-// const startRangerContext = async () => {
-//     let ranger: Ranger
-//     try {
-//         ranger = await AL.Game.startRanger(RANGER, TARGET_REGION, TARGET_IDENTIFIER)
-//     } catch (e) {
-//         if (ranger) ranger.disconnect()
-//         console.error(e)
-//         setTimeout(startRangerContext, 10_000)
-//         return
-//     }
-//     const CONTEXT = new Strategist<Ranger>(ranger, baseStrategy)
-//     startRanger(CONTEXT, true).catch(console.error)
-//     PRIVATE_CONTEXTS.push(CONTEXT)
-//     ALL_CONTEXTS.push(CONTEXT)
-// }
-// startRangerContext()
+const startRangerContext = async (name: string) => {
+    let ranger: Ranger
+    try {
+        ranger = await AL.Game.startRanger(name, TARGET_REGION, TARGET_IDENTIFIER)
+    } catch (e) {
+        if (ranger) ranger.disconnect()
+        console.error(e)
+        setTimeout(startRangerContext, 10_000)
+        return
+    }
+    const CONTEXT = new Strategist<Ranger>(ranger, baseStrategy)
+    startRanger(CONTEXT, true).catch(console.error)
+    PRIVATE_CONTEXTS.push(CONTEXT)
+    ALL_CONTEXTS.push(CONTEXT)
+}
+for (const name of RANGERS) startRangerContext(name)
+
+const startRogueContext = async (name: string) => {
+    let rogue: Rogue
+    try {
+        rogue = await AL.Game.startRogue(name, TARGET_REGION, TARGET_IDENTIFIER)
+    } catch (e) {
+        if (rogue) rogue.disconnect()
+        console.error(e)
+        setTimeout(startRogueContext, 10_000)
+        return
+    }
+    const CONTEXT = new Strategist<Rogue>(rogue, baseStrategy)
+    startRogue(CONTEXT, true).catch(console.error)
+    PRIVATE_CONTEXTS.push(CONTEXT)
+    ALL_CONTEXTS.push(CONTEXT)
+}
+for (const name of ROGUES) startRogueContext(name)
 
 class DisconnectOnCommandStrategy implements Strategy<PingCompensatedCharacter> {
     private onCodeEval: (data: string) => Promise<void>

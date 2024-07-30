@@ -25,6 +25,7 @@ import { ElixirStrategy } from "./strategy_pattern/strategies/elixir.js"
 import { NewMerchantStrategy, defaultNewMerchantStrategyOptions } from "./merchant/strategy.js"
 import { MagiportOthersSmartMovingToUsStrategy } from "./strategy_pattern/strategies/magiport.js"
 import { PartyHealStrategy } from "./strategy_pattern/strategies/partyheal.js"
+import { AvoidStackingStrategy } from "./strategy_pattern/strategies/avoid_stacking.js"
 
 AL.Game.setServer("http://thmsn.adventureland.community")
 
@@ -55,6 +56,7 @@ let TRACKER_DATA: TrackerData
 
 // Strategies
 const AVOID_DEATH_STRATEGY = new AvoidDeathStrategy()
+const AVOID_STACKING_STRATEGY = new AvoidStackingStrategy()
 const BASE_STRATEGY = new BaseStrategy(CONTEXTS)
 const BUY_STRATEGY = new BuyStrategy({ contexts: CONTEXTS, itemConfig: DEFAULT_ITEM_CONFIG })
 const CHARGE_STRATEGY = new ChargeStrategy()
@@ -228,6 +230,7 @@ async function start() {
         for (const context of CONTEXTS) {
             context.applyStrategies([
                 AVOID_DEATH_STRATEGY,
+                AVOID_STACKING_STRATEGY,
                 BUY_STRATEGY,
                 DESTROY_STRATEGY,
                 HOME_STRATEGY,
