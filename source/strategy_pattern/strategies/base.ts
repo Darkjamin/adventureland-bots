@@ -1,6 +1,7 @@
 import AL, { Attribute, Character, ChestData, Game, ItemName, PingCompensatedCharacter, Tools } from "alclient"
 import { LRUCache } from "lru-cache"
 import { filterContexts, Loop, LoopName, Strategist, Strategy } from "../context.js"
+import { potions_used } from "./metrics.js";
 
 export class BaseStrategy<Type extends PingCompensatedCharacter> implements Strategy<Type> {
     public loops = new Map<LoopName, Loop<Type>>()
@@ -120,21 +121,43 @@ export class BaseStrategy<Type extends PingCompensatedCharacter> implements Stra
             }
         }
 
+        const usePotion = async (potionName: ItemName) => {
+            const initialQuantity = bot.countItem(potionName);
+            try {
+                await bot.usePotion(bot.locateItem(potionName, bot.items, { returnLowestQuantity: true }));
+                const finalQuantity = bot.countItem(potionName);
+                
+                if (finalQuantity < initialQuantity) {
+                    // The potion was actually consumed
+                    //console.log(`${bot.name} used ${potionName}`); // Temporary logging
+                    potions_used.labels({ potion: potionName, character: bot.name }).inc();
+                    return true;
+                } else {
+                    // The potion wasn't consumed (likely due to cooldown)
+                    //console.log(`${bot.name} attempted to use ${potionName}, but it wasn't consumed`);
+                    return false;
+                }
+            } catch (error) {
+                //console.error(`Error using potion ${potionName} for ${bot.name}:`, error);
+                return false;
+            }
+        };
+
         if (Math.abs(hpRatio - mpRatio) < 0.25) {
             // Our ratios are pretty similar, prefer both
             if (maxGiveBothPotion)
-                return bot.usePotion(bot.locateItem(maxGiveBothPotion, bot.items, { returnLowestQuantity: true }))
+                return await usePotion(maxGiveBothPotion);
         }
 
         if (hpRatio <= mpRatio) {
             // HP ratio is the same, or lower than the MP ratio, prefer HP
-            if (maxGiveHpPotion === "regen_hp") return bot.regenHP()
-            else return bot.usePotion(bot.locateItem(maxGiveHpPotion, bot.items, { returnLowestQuantity: true }))
+            if (maxGiveHpPotion === "regen_hp") return bot.regenHP();
+            else return usePotion(maxGiveHpPotion);
         }
 
         // MP ratio is lower, prefer MP
-        if (maxGiveMpPotion === "regen_mp") return bot.regenMP()
-        else return bot.usePotion(bot.locateItem(maxGiveMpPotion, bot.items, { returnLowestQuantity: true }))
+        if (maxGiveMpPotion === "regen_mp") return bot.regenMP();
+        else return usePotion(maxGiveMpPotion);
     }
 
     private async lootChest(bot: Type, chest: ChestData) {

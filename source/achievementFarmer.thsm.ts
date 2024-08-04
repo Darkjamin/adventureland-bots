@@ -26,19 +26,28 @@ import { NewMerchantStrategy, defaultNewMerchantStrategyOptions } from "./mercha
 import { MagiportOthersSmartMovingToUsStrategy } from "./strategy_pattern/strategies/magiport.js"
 import { PartyHealStrategy } from "./strategy_pattern/strategies/partyheal.js"
 import { AvoidStackingStrategy } from "./strategy_pattern/strategies/avoid_stacking.js"
-import { initializeMetrics, updateServerInfo, updateCharacterInfo, loop_publish_metrics } from "./strategy_pattern/strategies/metrics.js"
-import { Strategy } from "./strategy_pattern/context.js"
 
+AL.Game.setServer("http://thmsn.adventureland.community")
 
-await Promise.all([AL.Game.loginJSONFile("../credentials.json", false), AL.Game.getGData(true)])
-await AL.Pathfinder.prepare(AL.Game.G)
+await Promise.all([AL.Game.loginJSONFile("../credentials.thmsn.json", false), AL.Game.getGData(false)])
+await AL.Pathfinder.prepare(AL.Game.G, { remove_abtesting: true, remove_test: true })
+await AL.Game.updateServersAndCharacters()
+
+//// Game Hacks
+// Hack to fix URLs
+for (const region in AL.Game.servers) {
+    for (const id in AL.Game.servers[region]) {
+        console.debug(`before: ${AL.Game.servers[region][id].addr}`)
+        AL.Game.servers[region][id].addr = "thmsn.adventureland.community"
+        console.debug(`after: ${AL.Game.servers[region][id].addr}`)
+    }
+}
 
 // Tweakable
 const SERVER_REGION: ServerRegion = "EU"
-const SERVER_ID: ServerIdentifier = "II"
+const SERVER_ID: ServerIdentifier = "I"
 //const FARMABLE_MONSTERS: MonsterName[] = ["bee", "crab", "goo", "poisio"]
-const FARMABLE_MONSTERS: MonsterName[] = ["goo", "bee", "crab", "minimush", "osnake", "snake", "rat", "squig", "arcticbee", "armadillo", "stoneworm", "cgoo", "croc", "iceroamer", "poisio", "crabx", "bbpompom", "tortoise", "booboo", "bat", "boar"]
-
+const FARMABLE_MONSTERS: MonsterName[] = ["goo", "bee", "crab", "minimush", "osnake", "snake", "rat", "squig", "arcticbee", "armadillo", "stoneworm", "cgoo", "croc", "iceroamer", "poisio", "porcupine", "crabx", "bbpompom", "tortoise", "booboo", "bat", "boar"]
 
 // Important variables
 let CURRENT_MONSTER: MonsterName = FARMABLE_MONSTERS[0]
@@ -65,17 +74,6 @@ const PARTY_HEAL_STRATEGY = new PartyHealStrategy(CONTEXTS)
 const RESPAWN_STRATEGY = new RespawnStrategy()
 const SELL_STRATEGY = new SellStrategy({ itemConfig: DEFAULT_ITEM_CONFIG })
 const TRACKER_STRATEGY = new TrackerStrategy()
-
-// Metrics strategy
-class MetricsStrategy implements Strategy<PingCompensatedCharacter> {
-    public onApply(bot: PingCompensatedCharacter) {
-        initializeMetrics(bot)
-        updateServerInfo(bot.serverData.region, bot.serverData.name)
-        updateCharacterInfo(bot)
-        loop_publish_metrics(bot)
-    }
-}
-const metricsStrategy = new MetricsStrategy()
 
 // Setups
 const SETUPS = constructSetups(CONTEXTS)
@@ -207,7 +205,7 @@ async function start() {
 
         // Setup merchant
         const merchantContext = new Strategist<Merchant>(merchant, BASE_STRATEGY)
-        merchantContext.applyStrategies([MERCHANT_STRATEGY,metricsStrategy])
+        merchantContext.applyStrategies([MERCHANT_STRATEGY])
         CONTEXTS.push(merchantContext)
 
         // Setup characters
@@ -219,7 +217,7 @@ async function start() {
             const context = new Strategist(character, BASE_STRATEGY)
             CONTEXTS.push(context)
             const config = chosenConfig.characters.find((c) => c.ctype === character.ctype)
-            context.applyStrategies([config.attack, config.move, joinPartyStrategy, ELIXIR_STRATEGY,metricsStrategy])
+            context.applyStrategies([config.attack, config.move, joinPartyStrategy, ELIXIR_STRATEGY])
 
             if (character.ctype === "mage") {
                 context.applyStrategies([MAGIPORT_STRATEGY])
