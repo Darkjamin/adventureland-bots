@@ -135,6 +135,7 @@ async function start() {
         console.debug("Analyzing tracker data...")
         let nextMonster = CURRENT_MONSTER
         let nextScore = Number.MAX_SAFE_INTEGER
+        let nextAdjustedScore = Number.MAX_SAFE_INTEGER
         for (const key of [...FARMABLE_MONSTERS]) {
             const monsterName = key as MonsterName
 
@@ -167,12 +168,21 @@ async function start() {
                 continue
             }
 
-            // Farm the monster with the lowest score needed until the next achievement
-            if (scoreToNextAchievement < nextScore) {
+            // Adjust the score
+            // We can kill about 10 1k HP monsters in the same time it takes to kill 1 10k HP monster
+            const adjustedScoreToNextAchievement = scoreToNextAchievement * gMonster.hp
+
+            if (adjustedScoreToNextAchievement < nextAdjustedScore) {
+                nextMonster = monsterName
                 nextMonster = monsterName
                 nextScore = scoreToNextAchievement
+                nextScore = scoreToNextAchievement
+                nextAdjustedScore = adjustedScoreToNextAchievement
             }
         }
+
+
+
 
         if (FARMABLE_MONSTERS.length === 0) {
             console.warn(`  We have completed the achievements for all monsters!`)
@@ -207,29 +217,27 @@ async function start() {
 
         // Setup merchant
         const merchantContext = new Strategist<Merchant>(merchant, BASE_STRATEGY)
-        merchantContext.applyStrategies([MERCHANT_STRATEGY,metricsStrategy])
+        merchantContext.applyStrategies([MERCHANT_STRATEGY, metricsStrategy])
         CONTEXTS.push(merchantContext)
 
         // Setup characters
         const joinPartyStrategy = new RequestPartyStrategy(merchantName)
         const promises = []
         for (const [chosenCharacter, chosenConfig] of chosenCharacters) {
-            const promise = await AL.Game.startCharacter(chosenCharacter, SERVER_REGION, SERVER_ID).then(
-                (character) => {
-            const context = new Strategist(character, BASE_STRATEGY)
-            CONTEXTS.push(context)
-            const config = chosenConfig.characters.find((c) => c.ctype === character.ctype)
-            context.applyStrategies([config.attack, config.move, joinPartyStrategy, ELIXIR_STRATEGY,metricsStrategy])
+            const promise = AL.Game.startCharacter(chosenCharacter, SERVER_REGION, SERVER_ID).then((character) => {
+                const context = new Strategist(character, BASE_STRATEGY)
+                CONTEXTS.push(context)
+                const config = chosenConfig.characters.find((c) => c.ctype === character.ctype)
+                context.applyStrategies([config.attack, config.move, joinPartyStrategy, ELIXIR_STRATEGY, metricsStrategy])
 
-            if (character.ctype === "mage") {
-                context.applyStrategies([MAGIPORT_STRATEGY])
-            } else if (character.ctype === "priest") {
-                context.applyStrategies([PARTY_HEAL_STRATEGY])
-            } else if (character.ctype === "warrior") {
-                context.applyStrategies([CHARGE_STRATEGY])
-            }
-                },
-            )
+                if (character.ctype === "mage") {
+                    context.applyStrategies([MAGIPORT_STRATEGY])
+                } else if (character.ctype === "priest") {
+                    context.applyStrategies([PARTY_HEAL_STRATEGY])
+                } else if (character.ctype === "warrior") {
+                    context.applyStrategies([CHARGE_STRATEGY])
+                }
+            })
             promises.push(promise)
         }
 
